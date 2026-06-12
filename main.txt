@@ -1,0 +1,36 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Optional
+from datetime import date
+import uuid
+
+app = FastAPI(title="Microsserviço - Gestão de Reservas")
+
+# Entidades / Objetos de Valor baseados no DDD
+class Hospede(BaseModel):
+    id_hospede: str
+    nome: str
+    tipo_cliente: str # Individual, Grupo, Corporativo
+
+class Reserva(BaseModel):
+    id_reserva: Optional[str] = None
+    hospede: Hospede
+    data_checkin: date
+    data_checkout: date
+    tipo_acomodacao: str
+    status: str = "Pendente"
+
+# Banco de dados em memória para demonstração
+reservas_db = []
+
+@app.post("/api/v1/reservas", response_model=Reserva)
+async def criar_reserva(reserva: Reserva):
+    """Cria uma nova reserva e dispara evento para o serviço de hospedagem"""
+    reserva.id_reserva = str(uuid.uuid4())
+    reserva.status = "Confirmada"
+    
+    # Aqui entraria a lógica de Event Driven (ex: publicando no RabbitMQ/Kafka)
+    # emitir_evento("ReservaCriada", reserva.dict())
+    
+    reservas_db.append(reserva)
+    return reserva
